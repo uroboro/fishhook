@@ -1,0 +1,8 @@
+os: osx
+osx_image: xcode7.2
+language: c
+sudo: false
+
+script:
+  # build!
+  - make test
