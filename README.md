@@ -1,5 +1,7 @@
 # fishhook
 
+[![Travis Status](https://travis-ci.org/uroboro/fishhook.svg)](https://travis-ci.org/uroboro/fishhook)
+
 __fishhook__ is a very simple library that enables dynamically rebinding symbols in Mach-O binaries running on iOS in the simulator and on device. This provides functionality that is similar to using [`DYLD_INTERPOSE`][interpose] on OS X. At Facebook, we've found it useful as a way to hook calls in libSystem for debugging/tracing purposes (for example, auditing for double-close issues with file descriptors).
 
 [interpose]: http://opensource.apple.com/source/dyld/dyld-210.2.3/include/mach-o/dyld-interposing.h "<mach-o/dyld-interposing.h>"
@@ -14,19 +16,19 @@ Once you add `fishhook.h`/`fishhook.c` to your project, you can rebind symbols a
 
 #import "AppDelegate.h"
 #import "fishhook.h"
- 
+
 static int (*orig_close)(int);
 static int (*orig_open)(const char *, int, ...);
- 
+
 int my_close(int fd) {
   printf("Calling real close(%d)\n", fd);
   return orig_close(fd);
 }
- 
+
 int my_open(const char *path, int oflag, ...) {
   va_list ap = {0};
   mode_t mode = 0;
- 
+
   if ((oflag & O_CREAT) != 0) {
     // mode only applies to O_CREAT
     va_start(ap, oflag);
@@ -39,12 +41,12 @@ int my_open(const char *path, int oflag, ...) {
     return orig_open(path, oflag, mode);
   }
 }
- 
+
 int main(int argc, char * argv[])
 {
   @autoreleasepool {
     rebind_symbols((struct rebinding[2]){{"close", my_close, (void *)&orig_close}, {"open", my_open, (void *)&orig_open}}, 2);
- 
+
     // Open our own binary and print out first 4 bytes (which is the same
     // for all Mach-O binaries on a given architecture)
     int fd = open(argv[0], O_RDONLY);
@@ -52,7 +54,7 @@ int main(int argc, char * argv[])
     read(fd, &magic_number, 4);
     printf("Mach-O Magic Number: %x \n", magic_number);
     close(fd);
- 
+
     return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
   }
 }
@@ -60,7 +62,7 @@ int main(int argc, char * argv[])
 ### Sample output
 ```
 Calling real open('/var/mobile/Applications/161DA598-5B83-41F5-8A44-675491AF6A2C/Test.app/Test', 0)
-Mach-O Magic Number: feedface 
+Mach-O Magic Number: feedface
 Calling real close(3)
 ...
 ```
